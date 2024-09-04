@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.sky.mapper.EmployeeMapper">
+    <select id="pageQuery" resultType="com.sky.entity.Employee">
+        select * from employee
+        <where>
+            <if test="name != null and name != ''">
+                and name like concat('%',#{name},'%')
+            </if>
+        </where>
+        order by create_time desc
+    </select>
+
+    <update id="update" parameterType="Employee">
+        update employee
+        <set>
+            <if test="name != null">name = #{name},</if>
+            <if test="username != null">username = #{username},</if>
+            <if test="password != null">password = #{password},</if>
+            <if test="phone != null">phone = #{phone},</if>
+            <if test="sex != null">sex = #{sex},</if>
+            <if test="idNumber != null">id_Number = #{idNumber},</if>
+            <if test="updateTime != null">update_Time = #{updateTime},</if>
+            <if test="updateUser != null">update_User = #{updateUser},</if>
+            <if test="status != null">status = #{status},</if>
+        </set>
+        where id = #{id}
+    </update>
+
+
+    <!-- 根据员工ID查询员工信息及其角色名称 -->
+    <select id="getUserInfoById" parameterType="java.lang.Long" resultMap="EmployeeInfoVOMap">
+        SELECT
+            e.id AS employee_id,
+            e.name AS employee_name,
+            e.sex AS employee_sex,
+            e.avatar AS employee_avatar,
+            r.name AS role_name
+        FROM
+            employee e
+                LEFT JOIN
+            employee_role er ON e.id = er.employee_id
+                LEFT JOIN
+            role r ON er.role_id = r.id
+        WHERE
+            e.id = #{employeeId}
+    </select>
+
+    <!-- 结果映射 -->
+    <resultMap id="EmployeeInfoVOMap" type="com.sky.vo.EmployeeInfoVO">
+        <id property="id" column="employee_id"/>
+        <result property="name" column="employee_name"/>
+        <result property="sex" column="employee_sex"/>
+        <result property="avatar" column="employee_avatar"/>
+        <collection property="roles" ofType="java.lang.String" javaType="list">
+            <result column="role_name"/>
+        </collection>
+    </resultMap>
+
+    <!-- 定义Menu的resultMap -->
+    <resultMap id="MenuResultMap" type="com.sky.entity.Menu">
+        <id property="menuId" column="menu_id"/>
+        <result property="name" column="name"/>
+        <result property="redirect" column="redirect"/>
+        <result property="component" column="component"/>
+        <result property="path" column="path"/>
+        <result property="parentId" column="parent_id"/>
+        <result property="meta" column="meta" typeHandler="com.sky.handler.JsonTypeHandler"/>
+        <collection property="children" ofType="com.sky.entity.Menu" column="menu_id" select="selectChildren"/>
+    </resultMap>
+
+    <!-- 查询菜单树的SQL -->
+    <select id="getMenuTree" resultMap="MenuResultMap">
+        SELECT
+            menu_id,
+            name,
+            redirect,
+            component,
+            path,
+            parent_id,
+            meta
+        FROM
+            menu
+        WHERE
+            parent_id = 0
+    </select>
+
+    <!-- 递归查询子菜单 -->
+    <select id="selectChildren" resultMap="MenuResultMap">
+        SELECT
+            menu_id,
+            name,
+            redirect,
+            component,
+            path,
+            parent_id,
+            meta
+        FROM
+            menu
+        WHERE
+            parent_id = #{menuId}
+    </select>
+
+</mapper>
